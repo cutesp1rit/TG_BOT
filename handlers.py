@@ -13,17 +13,14 @@ async def check_data(message: Message):
     if (type(dict_chats.get(id, -1)) is int):
         dict_chats[id] = list()
         chat_members = await get_chat_members(id)
-        print(chat_members)
+        # убираем бота из списка пользователей
+        dict_chats[id] = [member for member in chat_members if member != "produc1_manager_bot"]
 
 
 @router.message(CommandStart())
 async def cmd_start(message: Message):
     await check_data(message)
-    await message.answer_sticker("CAACAgIAAxkBAAEMgrhmmSOEjUk0snQE3IgDG0z0evKZQgACZCAAAttj0UhGGc1kRg_sVTUE")
-    if message.from_user.id == 894566791:
-        await message.reply("привет зая")
-    elif message.from_user.id == 634734136:
-        await message.reply("ЗАТКНИСЬ ДУРААААА")
+    await message.reply("привет, сейчас я расскажу, как работает бот...")
 
 @router.message(Command('new_list'))
 async def cmd_new_list(message: Message):

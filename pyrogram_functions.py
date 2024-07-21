@@ -7,6 +7,6 @@ async def get_chat_members(chat_id):
     chat_members = []
     await app.start()
     async for member in app.get_chat_members(chat_id):
-        chat_members = chat_members + [member.user.id]
+        chat_members = chat_members + [member.user.username]
     await app.stop()
     return chat_members
