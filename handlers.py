@@ -94,19 +94,6 @@ async def cmd_new_list(message: Message, state: FSMContext):
     except Exception:
         await message.reply("Вы ввели некорректные данные, пожалуйста, введите целое число, без лишних символов.")
 
-    try:
-        DownloadCheque.products[data["product"]] = int(message.text)
-        await state.set_state(DownloadCheque.person)
-        DownloadCheque.flag_main += 1
-        if (DownloadCheque.flag_main == int(data["count_of_positions"])):
-            await state.set_state(DownloadCheque.num_people)
-            await message.reply(f"Отлично! Нам осталось понять, сколько людей будет скидываться на продукты..")
-            DownloadCheque.flag_main = 0
-            # dict_chats[message.chat.id][message.from_user.username]
-            return
-        await message.reply(f"Отлично! Теперь введите название продукта №{DownloadCheque.flag_main + 1}:")
-    except Exception:
-        await message.reply("Вы ввели некорректные данные, пожалуйста, введите целое число, без лишних символов.")
 
 @router.message(Command('new_list'))
 async def cmd_new_list(message: Message):

@@ -12,8 +12,8 @@ def makeKeyboardForChoosingNum(id, dict_chats):
 def makeKeyboardForChoosingPeople(id, dict_chats):
     count_pos = dict_chats[id].get_len()
     persons = dict_chats[id].get_users()
-    choosing_people = ReplyKeyboardMarkup(keyboard=[[KeyboardButton(text=persons[i - 1]) for i in range(1, count_pos // 3 + 1)], 
-                                                [KeyboardButton(text=persons[i - 1]) for i in range(count_pos // 3 + 1, (count_pos // 3) * 2 + 1)], 
-                                                [KeyboardButton(text=persons[i - 1]) for i in range((count_pos // 3) * 2 + 1, count_pos + 1)]],
+    choosing_people = ReplyKeyboardMarkup(keyboard=[[KeyboardButton(text=str(persons[i - 1])) for i in range(1, count_pos // 3 + 1)], 
+                                                [KeyboardButton(text=str(persons[i - 1])) for i in range(count_pos // 3 + 1, (count_pos // 3) * 2 + 1)], 
+                                                [KeyboardButton(text=str(persons[i - 1])) for i in range((count_pos // 3) * 2 + 1, count_pos + 1)]],
                                                 resize_keyboard=True)
     return choosing_people

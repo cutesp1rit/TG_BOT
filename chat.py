@@ -14,4 +14,4 @@ class Chat:
         return len(self.users.items())
     
     def get_users(self):
-        return self.users.items()
+        return list(self.users.keys())
