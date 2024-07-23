@@ -77,7 +77,7 @@ async def cmd_new_list(message: Message, state: FSMContext):
             await state.set_state(DownloadCheque.num_people)
             await message.reply(f"Отлично! Нам осталось понять, сколько людей будет скидываться на продукты..")
             curr_chat.flag_main = 0
-            await message.answer(f'Сколько людей будет платить за продукт №{curr_chat.flag_main + 1}')
+            await message.reply(f'Сколько людей будет платить за продукт №{curr_chat.flag_main + 1}', reply_markup=kb.makeKeyboardForChoosingNum(message.chat.id, dict_chats))
             # dict_chats[message.chat.id][message.from_user.username]
             return
         await message.reply(f"Отлично! Теперь введите название продукта №{curr_chat.flag_main + 1}:")
