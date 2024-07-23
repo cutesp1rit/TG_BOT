@@ -90,7 +90,7 @@ async def cmd_new_list(message: Message, state: FSMContext):
     try:
         curr_chat.count_user = int(message.text)
         await state.set_state(DownloadCheque.person)
-        await message.reply(f"Выберите, кто будет скидываться за этот продукт.")
+        await message.reply(f"Выберите, кто будет скидываться за этот продукт.", reply_markup=kb.makeKeyboardForChoosingPeople(message.chat.id, dict_chats))
     except Exception:
         await message.reply("Вы ввели некорректные данные, пожалуйста, введите целое число, без лишних символов.")
 

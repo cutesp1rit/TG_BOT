@@ -12,3 +12,6 @@ class Chat:
 
     def get_len(self):
         return len(self.users.items())
+    
+    def get_users(self):
+        return self.users.items()
