@@ -12,6 +12,7 @@ import pandas as pd
 
 
 # переименовать методы
+# какие методы должны быть async
 
 bot = Bot(token=bot_token)
 router = Router()
@@ -69,20 +70,12 @@ async def cmd_new_list(message: Message, state: FSMContext):
 async def cmd_new_list(message: Message, state: FSMContext):
     curr_chat = dict_chats[message.chat.id]
     try:
-        data = await state.get_data()
-        curr_chat.products[data["product"]] = int(message.text)
-        await state.set_state(DownloadCheque.product)
-        curr_chat.flag_main += 1
-        if (curr_chat.flag_main == int(data["count_of_positions"])):
-            await state.set_state(DownloadCheque.num_people)
-            await message.reply(f"Отлично! Нам осталось понять, сколько людей будет скидываться на продукты..")
-            curr_chat.flag_main = 0
-            await message.reply(f'Сколько людей будет платить за продукт №{curr_chat.flag_main + 1}', reply_markup=kb.makeKeyboardForChoosingNum(message.chat.id, dict_chats))
-            # dict_chats[message.chat.id][message.from_user.username]
-            return
-        await message.reply(f"Отлично! Теперь введите название продукта №{curr_chat.flag_main + 1}:")
+        await state.update_data(price=int(message.text))
+        await state.set_state(DownloadCheque.num_people)
+        await message.reply(f"Выберите сколько человек будет скидываться на продукт №{curr_chat.flag_main + 1}:", reply_markup=kb.makeKeyboardForChoosingNum(message.chat.id, dict_chats))
     except Exception:
         await message.reply("Вы ввели некорректные данные, пожалуйста, введите целое число, без лишних символов.")
+
 
 @router.message(DownloadCheque.num_people)
 async def cmd_new_list(message: Message, state: FSMContext):
@@ -90,9 +83,35 @@ async def cmd_new_list(message: Message, state: FSMContext):
     try:
         curr_chat.count_user = int(message.text)
         await state.set_state(DownloadCheque.person)
-        await message.reply(f"Выберите, кто будет скидываться за этот продукт.", reply_markup=kb.makeKeyboardForChoosingPeople(message.chat.id, dict_chats))
+        await message.reply(f"Выберите, кто будет скидываться за этот продукт (каждого человека отдельным сообщением)", reply_markup=kb.makeKeyboardForChoosingPeople(message.chat.id, dict_chats))
     except Exception:
-        await message.reply("Вы ввели некорректные данные, пожалуйста, введите целое число, без лишних символов.")
+        await message.reply("Вы ввели некорректные данные, пожалуйста, введите/выберите целое ненулевое число, без лишних символов.")
+
+
+@router.message(DownloadCheque.person)
+async def cmd_new_list(message: Message, state: FSMContext):
+    curr_chat = dict_chats[message.chat.id]
+    try:
+        if not (message.text in curr_chat.get_users()):
+            raise Exception
+        curr_chat.list_users_products.append(message.text)
+        curr_chat.flag_user += 1
+        if (curr_chat.flag_user == curr_chat.count_user):
+            curr_chat.flag_user = 0
+            curr_chat.flag_main += 1
+            if curr_chat.flag_main == curr_chat.count_pos:
+                await curr_chat.reset()
+                await state.clear()
+                await message.reply(f"Ура! Мы получили все данные и уже составляем ваш чек..")
+                return
+                # передаем данные в метод
+            await state.set_state(DownloadCheque.product)
+            await message.reply(f"Отлично! Теперь введите название продукта №{curr_chat.flag_main + 1}:")
+            return
+        await state.set_state(DownloadCheque.person)
+        await message.reply(f"Кто еще?", reply_markup=kb.makeKeyboardForChoosingPeople(message.chat.id, dict_chats))
+    except Exception:
+        await message.reply("Пожалуйста, введите/выберите ник без @ из пользователей этого чата..")
 
 
 @router.message(Command('new_list'))

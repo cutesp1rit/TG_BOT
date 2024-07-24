@@ -4,7 +4,7 @@ class User:
         list_without_user = [member for member in list_of_users if str(member) != str(name)]
         self.other_debts_ = dict()
         self.own_debts_ = dict()
-        self.last_cheque = dict()
+        self.last_cheque_ = dict()
         for person in list_without_user:
             self.other_debts_[person] = 0.0
             self.own_debts_[person] = 0.0
@@ -30,4 +30,4 @@ class User:
         self.own_debts_[person] += money
 
     def new_cheque(self, cheque):
-        self.last_cheque = cheque
+        self.last_cheque_ = cheque
