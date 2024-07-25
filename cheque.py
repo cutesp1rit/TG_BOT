@@ -1,4 +1,5 @@
 import pandas as pd
+import dataframe_image as dfi
 
 class Cheque:
     def __init__(self, users):
@@ -12,13 +13,12 @@ class Cheque:
         self.products_.append(product)
         divided_price = price / len(users)
         for user in users:
-            self.dict_money_[str(user)].append(divided_price)
+            self.dict_money_[str(user)].append(round(divided_price, 2))
         for user in self.users_:
             if not (user in users):
                 self.dict_money_[str(user)].append(0)
 
-    async def make_cheque(self):
+    async def make_cheque(self, chat_id):
         self.cheque_ = pd.DataFrame(self.dict_money_)
         self.cheque_.index = self.products_
-        print(self.cheque_)
-        return str(self.cheque_)
+        dfi.export(self.cheque_, f'data_cheque_{chat_id}_.png')
