@@ -1,7 +1,7 @@
 from aiogram import F, Router, Bot
 from aiogram.types import Message
 from aiogram.filters import CommandStart, Command
-from app.pyrogram_functions import get_chat_members
+from app.telethon_functions import get_chat_members
 from app.data_bot import bot_token
 from app.user import User
 from app.chat import Chat
