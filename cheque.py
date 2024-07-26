@@ -2,8 +2,9 @@ import pandas as pd
 import dataframe_image as dfi
 
 class Cheque:
-    def __init__(self, users):
+    def __init__(self, users, creater):
         self.users_ = users
+        self.creater_ = creater
         self.dict_money_ = dict()
         self.products_ = list()
         for user in users:
@@ -26,3 +27,9 @@ class Cheque:
         self.cheque_ = pd.DataFrame(self.dict_money_)
         self.cheque_.index = self.products_
         dfi.export(self.cheque_, f'data_cheque_{chat_id}_.png')
+
+    def get_creater(self):
+        return self.creater_
+    
+    def get_cheque(self):
+        return self.dict_money_

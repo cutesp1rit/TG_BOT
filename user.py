@@ -1,23 +1,36 @@
+from app.cheque import Cheque
+
 class User:
     def __init__(self, name, list_of_users):
         self.name_ = name
         list_without_user = [member for member in list_of_users if str(member) != str(name)]
+        self.list_without_user_ = list_without_user
         self.other_debts_ = dict()
         self.own_debts_ = dict()
-        self.last_cheque_ = dict()
+        self.last_cheque_ = 0
         for person in list_without_user:
             self.other_debts_[person] = 0.0
             self.own_debts_[person] = 0.0
 
+    async def calculate_other_debts(self):
+        for user in self.last_cheque_.get_cheque().items():
+            if user[0] != self.name_:
+                self.other_debts_[user[0]] += user[1][-1]
+
+    async def calculate_own_debts(self, cheque : Cheque):
+        for user in cheque.get_cheque().items():
+            if user[0] == self.name_:
+                self.own_debts_[cheque.get_creater()] += user[1][-1]
+
     def get_own_debts(self):
-        res = f"@{self.name_} должен:\n"
+        res = f"@{self.name_} должен:\n\n"
         for i in self.own_debts_.items():
             res += f"@{i[0]}: {i[1]}\n"
         res += f"всего: {sum(self.own_debts_.values())}"
         return res
         
     def get_other_debts(self):
-        res = f"в долгу у @{self.name_}:\n"
+        res = f"в долгу у @{self.name_}:\n\n"
         for i in self.other_debts_.items():
             res += f"@{i[0]}: {i[1]}\n"
         res += f"всего: {sum(self.other_debts_.values())}"

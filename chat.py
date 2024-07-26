@@ -23,7 +23,7 @@ class Chat:
         if (type(self.last_cheque_) is int):
             return "Вы еще не составляли чеки, для этого используйте команду: ..."
         
-        return str(self.last_cheque_)
+        return self.last_cheque_
     
     async def reset(self):
         self.flag_main = 0
