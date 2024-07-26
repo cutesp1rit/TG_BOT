@@ -19,6 +19,10 @@ class Cheque:
                 self.dict_money_[str(user)].append(0)
 
     async def make_cheque(self, chat_id):
+        # добавляем сумму в конце
+        for member in self.dict_money_.items():
+            self.dict_money_[member[0]].append(sum(member[1]))
+        self.products_.append("Итог")
         self.cheque_ = pd.DataFrame(self.dict_money_)
         self.cheque_.index = self.products_
         dfi.export(self.cheque_, f'data_cheque_{chat_id}_.png')
