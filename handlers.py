@@ -4,7 +4,7 @@ from aiogram.filters import CommandStart, Command
 from app.telethon_functions import get_chat_members
 from app.user import User
 from app.chat import Chat
-from app.states import DownloadCheque
+from app.states import DownloadCheque, DownloadList
 from aiogram.fsm.context import FSMContext
 from app.cheque import Cheque
 import app.keyboards as kb
@@ -14,22 +14,13 @@ from os import remove
 
 
 # добавить смайлики и красоту в целом
-# написать свои исключения -- DONE
-# переименовать методы -- DONE
 # какие методы должны быть async - ?
-# поля -- DONE
-# скрытие кнопок -- DONE
-# округление чисел -- DONE
-# красивый чек -- DONE
-# сумма в конце -- DONE
-# привязать последний чек к user -- DONE
-# добавить систему долгов -- DONE
-# сделать команду получить последний чек -- DONE
 # отдельная папка для чеков - ?
-# поченить бота если несколько человек одиноковых -- DONE
 # возможно стоит добавить команду help
 # прописать логи
 # доделать команды со списком
+# кнопка возврата в главное меню или просто методы поменять местами
+# кнопка снятие долгов с других
 
 router = Router()
 dict_chats = dict()
@@ -159,14 +150,6 @@ async def cmd_get_other_debts(message: Message):
     curr_user : User = curr_chat.users_[message.from_user.username]
     await message.reply(curr_user.get_other_debts())
 
-@router.message(Command('new_list'))
-async def cmd_new_list(message: Message):
-    await check_data(message)
-
-@router.message(Command('get_lists'))
-async def cmd_get_lists(message: Message):
-    await check_data(message)
-
 @router.message(Command('get_last_cheque'))
 async def cmd_get_last_cheque(message: Message):
     await check_data(message)
@@ -178,6 +161,59 @@ async def cmd_get_last_cheque(message: Message):
         await message.answer(f"Его создатель: @{creater}")
     else:
         await message.reply("Вы еще не составляли чеки, для этого используйте команду: /download_cheque")
+
+@router.message(Command('new_list'))
+async def cmd_new_list(message: Message, state: FSMContext):
+    await check_data(message)
+    await message.reply("Напишите название списка:", reply_markup=kb.current_date)
+    await state.set_state(DownloadList.name_of_list)
+
+@router.message(DownloadList.name_of_list)
+async def get_name_of_list(message: Message, state: FSMContext):
+    curr_chat : Chat = dict_chats[message.chat.id]
+    if (not(type(curr_chat.dict_for_shop_lists_.get(message.text, -1)) is int)):
+        await message.reply("Список с таким именем уже существует! Пожалуйста, введите другое название:")
+        return
+    if (message.text == "Использовать текущую дату"):
+        today = message.date
+        if (not(type(curr_chat.dict_for_shop_lists_.get("{}.{}.{}".format(today.day, today.month, today.year), -1)) is int)):
+            await message.reply("Список с таким именем уже существует! Пожалуйста, введите другое название:")
+            return
+        curr_chat.dict_for_shop_lists_["{}.{}.{}".format(today.day, today.month, today.year)] = set()
+        await state.update_data(name="{}.{}.{}".format(today.day, today.month, today.year))
+    else:
+        curr_chat.dict_for_shop_lists_[message.text] = set()
+        await state.update_data(name=message.text)
+    await state.set_state(DownloadList.question)
+    await message.reply("Отлично! Хотите сейчас добавить продукты в него?", reply_markup=kb.yes_or_no)
+
+@router.message(DownloadList.question)
+async def dl_question(message: Message, state: FSMContext):
+    if (message.text != "Да" and message.text != "Нет"):
+        await message.reply('Пожалуйста, воспользуйтесь кнопками или напишите "Да"/"Нет"..', reply_markup=kb.yes_or_no)
+    else:
+        if (message.text == "Нет"):
+            await message.reply("Хорошо, возвращаем вас в главное меню..")
+            await state.clear()
+        else:
+            await state.set_state(DownloadList.get_products)
+            await message.reply("Хорошо, последовательно по сообщению вводите название каждого продукта. Для остановки воспользуйтесь кнопкой.", reply_markup=kb.stop)
+
+@router.message(DownloadList.get_products and Command('stop'))
+async def dl_question(message: Message, state: FSMContext):
+    await message.reply("Хорошо, возвращаем вас в главное меню..")
+    await state.clear()
+
+@router.message(DownloadList.get_products)
+async def dl_question(message: Message, state: FSMContext):
+    curr_chat : Chat = dict_chats[message.chat.id]
+    data = await state.get_data()
+    curr_chat.dict_for_shop_lists_[data["name"]].add(message.text)
+    await message.reply("Что еще?", reply_markup=kb.stop)
+
+@router.message(Command('get_lists'))
+async def cmd_get_lists(message: Message):
+    await check_data(message)
 
 @router.message(Command('remove_list'))
 async def cmd_remove_list(message: Message):

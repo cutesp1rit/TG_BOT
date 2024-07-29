@@ -8,6 +8,7 @@ class Chat:
         self.count_user_ = 0
         self.list_users_products_ = list()
         self.last_cheque_ = 0
+        self.dict_for_shop_lists_ = dict()
 
     def get_len(self):
         return len(self.users_.items())

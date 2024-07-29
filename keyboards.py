@@ -19,3 +19,15 @@ def makeKeyboardForChoosingPeople(id, dict_chats):
                                                 resize_keyboard=True,
                                                 one_time_keyboard=True)
     return choosing_people
+
+current_date = ReplyKeyboardMarkup(keyboard=[[KeyboardButton(text="Использовать текущую дату")]],
+                                                resize_keyboard=True,
+                                                one_time_keyboard=True)
+
+yes_or_no = ReplyKeyboardMarkup(keyboard=[[KeyboardButton(text="Да")], [KeyboardButton(text="Нет")]],
+                                                resize_keyboard=True,
+                                                one_time_keyboard=True)
+
+stop = ReplyKeyboardMarkup(keyboard=[[KeyboardButton(text="/stop")]],
+                                                resize_keyboard=True,
+                                                one_time_keyboard=True)

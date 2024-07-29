@@ -6,3 +6,8 @@ class DownloadCheque(StatesGroup):
     price = State()
     num_people = State()
     person = State()
+
+class DownloadList(StatesGroup):
+    name_of_list = State()
+    question = State()
+    get_products = State()
