@@ -13,6 +13,8 @@ from aiogram.types import FSInputFile
 from os import remove
 
 
+# добавить смайлики и красоту в целом
+# написать свои исключения
 # переименовать методы
 # какие методы должны быть async
 # поля
@@ -20,8 +22,9 @@ from os import remove
 # округление чисел -- DONE
 # красивый чек -- DONE
 # сумма в конце -- DONE
-# привязать последний чек к user
-# добавить систему долгов
+# привязать последний чек к user -- DONE
+# добавить систему долгов -- DONE
+# сделать команды получить последний чек
 # отдельная папка для чеков
 # поченить бота если несколько человек одиноковых
 
@@ -98,35 +101,35 @@ async def cmd_new_list(message: Message, state: FSMContext):
 async def cmd_new_list(message: Message, state: FSMContext):
     data = await state.get_data()
     curr_chat : Chat = dict_chats[message.chat.id]
-    # try:
-    if not (message.text in curr_chat.get_users()):
-        raise Exception
-    curr_chat.list_users_products.append(message.text)
-    curr_chat.flag_user += 1
-    if (curr_chat.flag_user == curr_chat.count_user):
-        curr_chat.flag_user = 0
-        curr_chat.flag_main += 1
-        await curr_chat.last_cheque_.new_product(data["product"], int(data["price"]), curr_chat.list_users_products.copy())
-        curr_chat.list_users_products = list()
-        if curr_chat.flag_main == curr_chat.count_pos:
-            await curr_chat.reset()
-            await state.clear()
-            await message.reply(f"Ура! Мы получили все данные и уже составляем ваш чек..")
-            await curr_chat.last_cheque_.make_cheque(message.chat.id)
-            await message.answer_photo(photo=FSInputFile(f'data_cheque_{message.chat.id}_.png'))
-            cur_user : User = curr_chat.users[(curr_chat.get_cheque()).get_creater()]
-            await cur_user.calculate_other_debts()
-            for user in cur_user.list_without_user_:
-                await curr_chat.users[user].calculate_own_debts(curr_chat.get_cheque())
-            remove(f'data_cheque_{message.chat.id}_.png')
+    try:
+        if not (message.text in curr_chat.get_users()):
+            raise Exception
+        curr_chat.list_users_products.append(message.text)
+        curr_chat.flag_user += 1
+        if (curr_chat.flag_user == curr_chat.count_user):
+            curr_chat.flag_user = 0
+            curr_chat.flag_main += 1
+            await curr_chat.last_cheque_.new_product(data["product"], int(data["price"]), curr_chat.list_users_products.copy())
+            curr_chat.list_users_products = list()
+            if curr_chat.flag_main == curr_chat.count_pos:
+                await curr_chat.reset()
+                await state.clear()
+                await message.reply(f"Ура! Мы получили все данные и уже составляем ваш чек..")
+                await curr_chat.last_cheque_.make_cheque(message.chat.id)
+                await message.answer_photo(photo=FSInputFile(f'data_cheque_{message.chat.id}_.png'))
+                cur_user : User = curr_chat.users[(curr_chat.get_cheque()).get_creater()]
+                await cur_user.calculate_other_debts()
+                for user in cur_user.list_without_user_:
+                    await curr_chat.users[user].calculate_own_debts(curr_chat.get_cheque())
+                remove(f'data_cheque_{message.chat.id}_.png')
+                return
+            await state.set_state(DownloadCheque.product)
+            await message.reply(f"Отлично! Теперь введите название продукта №{curr_chat.flag_main + 1}:")
             return
-        await state.set_state(DownloadCheque.product)
-        await message.reply(f"Отлично! Теперь введите название продукта №{curr_chat.flag_main + 1}:")
-        return
-    await state.set_state(DownloadCheque.person)
-    await message.reply(f"Кто еще?", reply_markup=kb.makeKeyboardForChoosingPeople(message.chat.id, dict_chats))
-    # except Exception:
-    #     await message.reply("Пожалуйста, введите/выберите ник без @ из пользователей этого чата..")
+        await state.set_state(DownloadCheque.person)
+        await message.reply(f"Кто еще?", reply_markup=kb.makeKeyboardForChoosingPeople(message.chat.id, dict_chats))
+    except Exception:
+        await message.reply("Пожалуйста, введите/выберите ник без @ из пользователей этого чата..")
 
 @router.message(Command('get_my_debts'))
 async def cmd_new_list(message: Message):

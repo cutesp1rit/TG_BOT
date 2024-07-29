@@ -13,8 +13,13 @@ class Cheque:
     async def new_product(self, product, price, users):
         self.products_.append(product)
         divided_price = price / len(users)
+        tmp_dict = dict() # для контроля входящих одинаковых ников пользователей
         for user in users:
-            self.dict_money_[str(user)].append(round(divided_price, 2))
+            if (tmp_dict.get(str(user), -1) == -1):
+                self.dict_money_[str(user)].append(round(divided_price, 2))
+                tmp_dict[str(user)] = 1
+            else: # здесь 1
+                self.dict_money_[str(user)][-1] += round(divided_price, 2)
         for user in self.users_:
             if not (user in users):
                 self.dict_money_[str(user)].append(0)
