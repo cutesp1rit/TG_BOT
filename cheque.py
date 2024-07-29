@@ -38,3 +38,7 @@ class Cheque:
     
     def get_cheque(self):
         return self.dict_money_
+    
+    async def get_cheque_image(self, chat_id):
+        dfi.export(self.cheque_, f'data_cheque_{chat_id}_.png')
+        return self.creater_
