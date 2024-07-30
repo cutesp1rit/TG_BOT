@@ -4,7 +4,7 @@ from aiogram.filters import CommandStart, Command
 from app.telethon_functions import get_chat_members
 from app.user import User
 from app.chat import Chat
-from app.states import DownloadCheque, DownloadList, GettingList, ModifyLists
+from app.states import DownloadCheque, DownloadList, GettingList, ModifyLists, RemoveDebt
 from aiogram.fsm.context import FSMContext
 from app.cheque import Cheque
 import app.keyboards as kb
@@ -18,9 +18,9 @@ from os import remove
 # отдельная папка для чеков - ?
 # возможно стоит добавить команду help
 # прописать логи
-# доделать команды со списком
-# кнопка возврата в главное меню или просто методы поменять местами
-# кнопка снятие долгов с других
+# доделать команды со списком -- DONE
+# кнопка возврата в главное меню или просто методы поменять местами -- DONE
+# кнопка снятие долгов с других -- DONE
 
 router = Router()
 dict_chats = dict()
@@ -41,7 +41,6 @@ async def cmd_start(message: Message):
     await check_data(message)
     await message.answer("Привет, сейчас я расскажу, как работает бот...")
 
-
 @router.message(Command('download_cheque'))
 async def cmd_download_cheque(message: Message, state: FSMContext):
     await check_data(message)
@@ -50,6 +49,136 @@ async def cmd_download_cheque(message: Message, state: FSMContext):
     curr_chat.users_[message.from_user.username].new_cheque(curr_chat.last_cheque_)
     await message.reply("Напишите количество позиций, которое будет в чеке:")
     await state.set_state(DownloadCheque.count_of_positions)
+
+@router.message(Command('get_my_debts'))
+async def cmd_get_my_debts(message: Message):
+    await check_data(message)
+    curr_chat : Chat = dict_chats[message.chat.id]
+    curr_user : User = curr_chat.users_[message.from_user.username]
+    await message.reply(curr_user.get_own_debts())
+    
+
+@router.message(Command('get_other_debts'))
+async def cmd_get_other_debts(message: Message):
+    await check_data(message)
+    curr_chat : Chat = dict_chats[message.chat.id]
+    curr_user : User = curr_chat.users_[message.from_user.username]
+    await message.reply(curr_user.get_other_debts())
+
+@router.message(Command('get_last_cheque'))
+async def cmd_get_last_cheque(message: Message):
+    await check_data(message)
+    curr_chat : Chat = dict_chats[message.chat.id]
+    if (curr_chat.check_cheque()):
+        creater = await curr_chat.get_cheque().get_cheque_image(message.chat.id)
+        await message.answer_photo(photo=FSInputFile(f'data_cheque_{message.chat.id}_.png'))
+        remove(f'data_cheque_{message.chat.id}_.png')
+        await message.answer(f"Его создатель: @{creater}")
+    else:
+        await message.reply("Вы еще не составляли чеки, для этого используйте команду: /download_cheque")
+
+@router.message(Command('new_list'))
+async def cmd_new_list(message: Message, state: FSMContext):
+    await check_data(message)
+    await message.reply("Напишите название списка:", reply_markup=kb.current_date)
+    await state.set_state(DownloadList.name_of_list)
+
+@router.message(Command('remove_debt'))
+async def cmd_remove_debt(message: Message, state: FSMContext):
+    await check_data(message)
+    curr_chat : Chat = dict_chats[message.chat.id]
+    await state.update_data(user=message.from_user.username)
+    await message.reply("Выберите с какого пользователя вы бы хотели снять долг.", reply_markup=kb.makeKeyboardForChoosingPeopleWithoutUser(curr_chat.users_[message.from_user.username].get_list_without_user()))
+    await state.set_state(RemoveDebt.choose_person)
+
+@router.message(Command('get_lists'))
+async def cmd_get_lists(message: Message, state: FSMContext):
+    await check_data(message)
+    if (len(dict_chats[message.chat.id].get_dict_for_shop_lists_name()) == 0):
+        await message.reply("Вы еще не создавали списки, для этого воспользуйтесь командой /new_list")
+        return
+    await message.reply("Выберите какой из списков вы бы хотели посмотреть:", reply_markup=kb.makeKeyboardForGettingLists(dict_chats[message.chat.id]))
+    await state.set_state(GettingList.get_name)
+
+@router.message(Command('modify_lists'))
+async def cmd_modify_lists(message: Message, state: FSMContext):
+    await check_data(message)
+    await message.reply("Выберите какой из списков вы бы хотели изменить:", reply_markup=kb.makeKeyboardForGettingLists(dict_chats[message.chat.id]))
+    await state.set_state(ModifyLists.choose_list)
+
+@router.message(GettingList.get_name)
+async def gl_get_name(message: Message, state: FSMContext):
+    curr_chat : Chat = dict_chats[message.chat.id]
+    try:
+        if not (message.text in curr_chat.get_dict_for_shop_lists_name()):
+            raise IncorrectData
+        if (await curr_chat.get_len_list(message.text) == 0):
+            await message.reply(f"Этот список еще пуст, для его заполнения воспользуйтесь командой: /modify_lists")
+        else:
+            list = await curr_chat.get_list(message.text)
+            await message.reply(f"{message.text}\n\n{list}")
+        await state.clear()
+    except IncorrectData:
+        await message.reply("Пожалуйста, введите/выберите список из предложенных кнопками, других нет..")
+    except Exception as ex:
+        await message.reply(f"Произошла непредвиденная ошибка: {ex}")
+
+@router.message(ModifyLists.choose_list)
+async def ml_get_name(message: Message, state: FSMContext):
+    curr_chat : Chat = dict_chats[message.chat.id]
+    try:
+        if not (message.text in curr_chat.get_dict_for_shop_lists_name()):
+            raise IncorrectData
+        await state.update_data(name=message.text)
+        await message.reply("Отлично! Теперь выберите, что конкретно вы бы хотели сделать с этим списком.", reply_markup=kb.options_for_modification)
+        await state.set_state(ModifyLists.choose_modification)
+    except IncorrectData:
+        await message.reply("Пожалуйста, введите/выберите список из предложенных кнопками, других нет..")
+    except Exception as ex:
+        await message.reply(f"Произошла непредвиденная ошибка: {ex}")
+
+@router.message(ModifyLists.choose_modification)
+async def ml_get_opt(message: Message, state: FSMContext):
+    opt_mod = ["удалить список", "очистить список", "удалить некоторые элементы из списка", "добавить некоторые элементы в список"]
+    curr_chat : Chat = dict_chats[message.chat.id]
+    data = await state.get_data()
+    try:
+        if not (str(message.text).lower() in opt_mod):
+            raise IncorrectData
+        # обработка полученных данных
+        low_message = str(message.text).lower()
+        if low_message == opt_mod[0]:
+            await curr_chat.delete_list(data["name"])
+            await message.reply("Мы успешно удалили данный список!")
+        elif low_message == opt_mod[1]:
+            await curr_chat.clear_list(data["name"])
+            await message.reply("Мы успешно очистили данный список!")
+        elif low_message == opt_mod[2]:
+            await state.set_state(ModifyLists.delete_products)
+            list = await curr_chat.get_list(message.text)
+            await message.reply(f'Вот список "{message.text}":\n\n{list}')
+            await message.reply("Хорошо, последовательно по сообщению вводите название каждого продукта, которое хотите удалить. Для остановки воспользуйтесь кнопкой.", reply_markup=kb.stop)
+        else:
+            await state.set_state(DownloadList.get_products)
+            await message.reply("Хорошо, последовательно по сообщению вводите название каждого продукта. Для остановки воспользуйтесь кнопкой.", reply_markup=kb.stop)
+    except IncorrectData:
+        await message.reply("Пожалуйста, введите/выберите список из предложенных кнопками, других нет..")
+    except Exception as ex:
+        await message.reply(f"Произошла непредвиденная ошибка: {ex}")
+
+@router.message(ModifyLists.delete_products)
+async def ml_del_prod(message: Message, state: FSMContext):
+    curr_chat : Chat = dict_chats[message.chat.id]
+    data = await state.get_data()
+    try:
+        if not(message.text.lower() in curr_chat.dict_for_shop_lists_[data["name"]]):
+            raise IncorrectData
+        curr_chat.dict_for_shop_lists_[data["name"]].remove(message.text.lower())
+        await message.reply("Что еще?", reply_markup=kb.stop)
+    except IncorrectData:
+        await message.reply("Пожалуйста, введите/выберите элемент из списка, других нет..")
+    except Exception as ex:
+        await message.reply(f"Произошла непредвиденная ошибка: {ex}")
 
 @router.message(DownloadCheque.count_of_positions)
 async def get_count_of_positions(message: Message, state: FSMContext):
@@ -135,38 +264,34 @@ async def get_names_of_people(message: Message, state: FSMContext):
     except Exception as ex:
         await message.reply(f"Произошла непредвиденная ошибка: {ex}")
 
-@router.message(Command('get_my_debts'))
-async def cmd_get_my_debts(message: Message):
-    await check_data(message)
+@router.message(RemoveDebt.choose_person)
+async def rd_choose_person(message: Message, state: FSMContext):
     curr_chat : Chat = dict_chats[message.chat.id]
-    curr_user : User = curr_chat.users_[message.from_user.username]
-    await message.reply(curr_user.get_own_debts())
-    
+    data = await state.get_data()
+    try:
+        if not (message.text in curr_chat.users_[data["user"]].get_list_without_user()):
+            raise IncorrectData
+        await state.update_data(debtor=message.text)
+        await state.set_state(RemoveDebt.get_num)
+        await message.reply("Отлично! Теперь введите размер какого долга (число) с него вы собираетесь снять:")
+    except IncorrectData:
+        await message.reply("Пожалуйста, введите/выберите ник без @ из пользователей этого чата, а также не себя..", reply_markup=kb.makeKeyboardForChoosingPeopleWithoutUser(curr_chat.users_[data["user"]].get_list_without_user()))
+    except Exception as ex:
+        await message.reply(f"Произошла непредвиденная ошибка: {ex}")
 
-@router.message(Command('get_other_debts'))
-async def cmd_get_other_debts(message: Message):
-    await check_data(message)
+@router.message(RemoveDebt.get_num)
+async def rd_get_num(message: Message, state: FSMContext):
     curr_chat : Chat = dict_chats[message.chat.id]
-    curr_user : User = curr_chat.users_[message.from_user.username]
-    await message.reply(curr_user.get_other_debts())
-
-@router.message(Command('get_last_cheque'))
-async def cmd_get_last_cheque(message: Message):
-    await check_data(message)
-    curr_chat : Chat = dict_chats[message.chat.id]
-    if (curr_chat.check_cheque()):
-        creater = await curr_chat.get_cheque().get_cheque_image(message.chat.id)
-        await message.answer_photo(photo=FSInputFile(f'data_cheque_{message.chat.id}_.png'))
-        remove(f'data_cheque_{message.chat.id}_.png')
-        await message.answer(f"Его создатель: @{creater}")
-    else:
-        await message.reply("Вы еще не составляли чеки, для этого используйте команду: /download_cheque")
-
-@router.message(Command('new_list'))
-async def cmd_new_list(message: Message, state: FSMContext):
-    await check_data(message)
-    await message.reply("Напишите название списка:", reply_markup=kb.current_date)
-    await state.set_state(DownloadList.name_of_list)
+    data = await state.get_data()
+    try:
+        await curr_chat.users_[data["user"]].remove_other_debt(data["debtor"], int(message.text))
+        await curr_chat.users_[data["debtor"]].remove_own_debt(data["user"], int(message.text))
+        await message.reply(f"Долг был снят!")
+        await state.clear()
+    except ValueError:
+        await message.reply("Вы ввели некорректные данные, пожалуйста, введите/выберите целое число, без лишних символов.")
+    except Exception as ex:
+        await message.reply(f"Произошла непредвиденная ошибка: {ex}")
 
 @router.message(DownloadList.name_of_list)
 async def get_name_of_list(message: Message, state: FSMContext):
@@ -210,95 +335,6 @@ async def dl_question(message: Message, state: FSMContext):
     data = await state.get_data()
     curr_chat.dict_for_shop_lists_[data["name"]].add(message.text.lower())
     await message.reply("Что еще?", reply_markup=kb.stop)
-
-@router.message(Command('get_lists'))
-async def cmd_get_lists(message: Message, state: FSMContext):
-    await check_data(message)
-    if (len(dict_chats[message.chat.id].get_dict_for_shop_lists_name()) == 0):
-        await message.reply("Вы еще не создавали списки, для этого воспользуйтесь командой /new_list")
-        return
-    await message.reply("Выберите какой из списков вы бы хотели посмотреть:", reply_markup=kb.makeKeyboardForGettingLists(dict_chats[message.chat.id]))
-    await state.set_state(GettingList.get_name)
-
-@router.message(GettingList.get_name)
-async def gl_get_name(message: Message, state: FSMContext):
-    curr_chat : Chat = dict_chats[message.chat.id]
-    try:
-        if not (message.text in curr_chat.get_dict_for_shop_lists_name()):
-            raise IncorrectData
-        if (await curr_chat.get_len_list(message.text) == 0):
-            await message.reply(f"Этот список еще пуст, для его заполнения воспользуйтесь командой: /modify_lists")
-        else:
-            list = await curr_chat.get_list(message.text)
-            await message.reply(f"{message.text}\n\n{list}")
-        await state.clear()
-    except IncorrectData:
-        await message.reply("Пожалуйста, введите/выберите список из предложенных кнопками, других нет..")
-    except Exception as ex:
-        await message.reply(f"Произошла непредвиденная ошибка: {ex}")
-
-@router.message(Command('modify_lists'))
-async def cmd_modify_lists(message: Message, state: FSMContext):
-    await check_data(message)
-    await message.reply("Выберите какой из списков вы бы хотели изменить:", reply_markup=kb.makeKeyboardForGettingLists(dict_chats[message.chat.id]))
-    await state.set_state(ModifyLists.chosse_list)
-
-@router.message(ModifyLists.chosse_list)
-async def ml_get_name(message: Message, state: FSMContext):
-    curr_chat : Chat = dict_chats[message.chat.id]
-    try:
-        if not (message.text in curr_chat.get_dict_for_shop_lists_name()):
-            raise IncorrectData
-        await state.update_data(name=message.text)
-        await message.reply("Отлично! Теперь выберите, что конкретно вы бы хотели сделать с этим списком.", reply_markup=kb.options_for_modification)
-        await state.set_state(ModifyLists.choose_modification)
-    except IncorrectData:
-        await message.reply("Пожалуйста, введите/выберите список из предложенных кнопками, других нет..")
-    except Exception as ex:
-        await message.reply(f"Произошла непредвиденная ошибка: {ex}")
-
-@router.message(ModifyLists.choose_modification)
-async def ml_get_opt(message: Message, state: FSMContext):
-    opt_mod = ["удалить список", "очистить список", "удалить некоторые элементы из списка", "добавить некоторые элементы в список"]
-    curr_chat : Chat = dict_chats[message.chat.id]
-    data = await state.get_data()
-    try:
-        if not (str(message.text).lower() in opt_mod):
-            raise IncorrectData
-        # обработка полученных данных
-        low_message = str(message.text).lower()
-        if low_message == opt_mod[0]:
-            await curr_chat.delete_list(data["name"])
-            await message.reply("Мы успешно удалили данный список!")
-        elif low_message == opt_mod[1]:
-            await curr_chat.clear_list(data["name"])
-            await message.reply("Мы успешно очистили данный список!")
-        elif low_message == opt_mod[2]:
-            await state.set_state(ModifyLists.delete_products)
-            list = await curr_chat.get_list(message.text)
-            await message.reply(f'Вот список "{message.text}":\n\n{list}')
-            await message.reply("Хорошо, последовательно по сообщению вводите название каждого продукта, которое хотите удалить. Для остановки воспользуйтесь кнопкой.", reply_markup=kb.stop)
-        else:
-            await state.set_state(DownloadList.get_products)
-            await message.reply("Хорошо, последовательно по сообщению вводите название каждого продукта. Для остановки воспользуйтесь кнопкой.", reply_markup=kb.stop)
-    except IncorrectData:
-        await message.reply("Пожалуйста, введите/выберите список из предложенных кнопками, других нет..")
-    except Exception as ex:
-        await message.reply(f"Произошла непредвиденная ошибка: {ex}")
-
-@router.message(ModifyLists.delete_products)
-async def ml_del_prod(message: Message, state: FSMContext):
-    curr_chat : Chat = dict_chats[message.chat.id]
-    data = await state.get_data()
-    try:
-        if not(message.text.lower() in curr_chat.dict_for_shop_lists_[data["name"]]):
-            raise IncorrectData
-        curr_chat.dict_for_shop_lists_[data["name"]].remove(message.text.lower())
-        await message.reply("Что еще?", reply_markup=kb.stop)
-    except IncorrectData:
-        await message.reply("Пожалуйста, введите/выберите элемент из списка, других нет..")
-    except Exception as ex:
-        await message.reply(f"Произошла непредвиденная ошибка: {ex}")
 
 @router.message()
 async def universal(message: Message):

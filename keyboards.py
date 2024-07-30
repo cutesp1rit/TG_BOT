@@ -20,6 +20,15 @@ def makeKeyboardForChoosingPeople(id, dict_chats):
                                                 one_time_keyboard=True)
     return choosing_people
 
+def makeKeyboardForChoosingPeopleWithoutUser(persons):
+    count_pos = len(persons)
+    choosing_people = ReplyKeyboardMarkup(keyboard=[[KeyboardButton(text=str(persons[i - 1])) for i in range(1, count_pos // 3 + 1)], 
+                                                [KeyboardButton(text=str(persons[i - 1])) for i in range(count_pos // 3 + 1, (count_pos // 3) * 2 + 1)], 
+                                                [KeyboardButton(text=str(persons[i - 1])) for i in range((count_pos // 3) * 2 + 1, count_pos + 1)]],
+                                                resize_keyboard=True,
+                                                one_time_keyboard=True)
+    return choosing_people
+
 def makeKeyboardForGettingLists(chat):
     chat_lists_name = list(chat.get_dict_for_shop_lists_name())
     length = len(chat_lists_name)

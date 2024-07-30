@@ -22,6 +22,9 @@ class User:
             if user[0] == self.name_:
                 self.own_debts_[cheque.get_creater()] += user[1][-1]
 
+    def get_list_without_user(self):
+        return self.list_without_user_
+
     def get_own_debts(self):
         res = f"@{self.name_} должен:\n\n"
         for i in self.own_debts_.items():
@@ -44,3 +47,9 @@ class User:
 
     def new_cheque(self, cheque):
         self.last_cheque_ = cheque
+
+    async def remove_other_debt(self, name, num):
+        self.other_debts_[name] -= num
+    
+    async def remove_own_debt(self, name, num):
+        self.own_debts_[name] -= num

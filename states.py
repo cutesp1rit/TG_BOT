@@ -16,6 +16,11 @@ class GettingList(StatesGroup):
     get_name = State()
 
 class ModifyLists(StatesGroup):
-    chosse_list = State()
+    choose_list = State()
     choose_modification = State()
     delete_products = State()
+
+class RemoveDebt(StatesGroup):
+    choose_person = State()
+    get_num = State()
+
