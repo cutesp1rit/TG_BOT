@@ -30,8 +30,8 @@ async def check_data(message: Message):
     if (type(dict_chats.get(id, -1)) is int):
         dict_tmp = dict()
         chat_members = await get_chat_members(id)
-        # убираем бота из списка пользователей
-        chat_without_bot = [member for member in chat_members if member != "produc1_manager_bot"]
+        # убираем ботов из списка пользователей
+        chat_without_bot = [member for member in chat_members if member[-3:] != "bot"]
         for member in chat_without_bot:
             dict_tmp[member] = User(member, chat_without_bot)
         dict_chats[id] = Chat(dict_tmp)
@@ -39,7 +39,11 @@ async def check_data(message: Message):
 @router.message(CommandStart())
 async def cmd_start(message: Message):
     await check_data(message)
-    await message.answer("Привет, сейчас я расскажу, как работает бот...")
+    curr_chat : Chat = dict_chats[message.chat.id]
+    if (len(curr_chat.get_users()) == 1):
+        await message.answer("Вы чурка")
+    else:
+        await message.answer("Привет, сейчас я расскажу, как работает бот...")
 
 @router.message(Command('download_cheque'))
 async def cmd_download_cheque(message: Message, state: FSMContext):
@@ -159,8 +163,8 @@ async def ml_get_opt(message: Message, state: FSMContext):
             await message.reply(f'Вот список "{message.text}":\n\n{list}')
             await message.reply("Хорошо, последовательно по сообщению вводите название каждого продукта, которое хотите удалить. Для остановки воспользуйтесь кнопкой.", reply_markup=kb.stop)
         else:
-            await state.set_state(DownloadList.get_products)
-            await message.reply("Хорошо, последовательно по сообщению вводите название каждого продукта. Для остановки воспользуйтесь кнопкой.", reply_markup=kb.stop)
+            await state.set_state(DownloadList.choose_option)
+            await message.reply("Выберите как вы собираетесь создать список:", reply_markup=kb.options_elementwise_or_not)
     except IncorrectData:
         await message.reply("Пожалуйста, введите/выберите список из предложенных кнопками, других нет..")
     except Exception as ex:
@@ -184,12 +188,14 @@ async def ml_del_prod(message: Message, state: FSMContext):
 async def get_count_of_positions(message: Message, state: FSMContext):
     curr_chat : Chat = dict_chats[message.chat.id]
     try:
+        if (int(message.text) == 0):
+            raise ValueError
         await state.update_data(count_of_positions=int(message.text))
         curr_chat.count_pos_ = int(message.text)
         await state.set_state(DownloadCheque.product)
         await message.reply(f"Отлично! Теперь введите название продукта №{curr_chat.flag_main_ + 1}:")
     except ValueError:
-        await message.reply(f"Некорректные данные, пожалуйста, введите целое число, без лишних символов.")
+        await message.reply(f"Некорректные данные, пожалуйста, введите целое ненулевое число, без лишних символов.")
     except Exception as ex:
         await message.reply(f"Произошла непредвиденная ошибка: {ex}")
 
@@ -321,8 +327,40 @@ async def dl_question(message: Message, state: FSMContext):
             await message.reply("Хорошо, вернули вас в главное меню")
             await state.clear()
         else:
+            await state.set_state(DownloadList.choose_option)
+            await message.reply("Выберите как вы собираетесь создать список:", reply_markup=kb.options_elementwise_or_not)
+
+@router.message(DownloadList.choose_option)
+async def dl_ch_opt(message: Message, state: FSMContext):
+    arr_opt = ["вводить продукты поэлементно", "ввести все одним списком-сообщением"]
+    try:
+        if not (message.text.lower() in arr_opt):
+            raise IncorrectData
+        if (message.text.lower() == "вводить продукты поэлементно"):
             await state.set_state(DownloadList.get_products)
             await message.reply("Хорошо, последовательно по сообщению вводите название каждого продукта. Для остановки воспользуйтесь кнопкой.", reply_markup=kb.stop)
+        else:
+            await state.set_state(DownloadList.get_list)
+            await message.reply("Хорошо, тогда одним сообщением отправьте ваш список, чтобы каждый продукт был на отдельной строке. Пример:")
+            await message.answer('Помидоры\nОгурцы\nХлеб\n...')
+    except IncorrectData:
+        await message.reply("Пожалуйста, введите/выберите опцию из предложенных кнопками, других нет..")
+    except Exception as ex:
+        await message.reply(f"Произошла непредвиденная ошибка: {ex}")
+
+@router.message(DownloadList.get_list)
+async def dl_get_list(message: Message, state: FSMContext):
+    curr_chat : Chat = dict_chats[message.chat.id]
+    data = await state.get_data()
+    try:
+        new_list = set([product.lower() for product in message.text.split('\n')])
+        if (type(curr_chat.dict_for_shop_lists_.get(data["name"], -1)) is int):
+            curr_chat.dict_for_shop_lists_[data["name"]] = set()
+        curr_chat.dict_for_shop_lists_[data["name"]] = curr_chat.dict_for_shop_lists_[data["name"]].union(new_list)
+        await message.reply(f"Готово!")
+        await state.clear()
+    except Exception as ex:
+        await message.reply(f"Произошла непредвиденная ошибка: {ex}")
 
 @router.message((DownloadList.get_products or ModifyLists.delete_products) and Command('stop'))
 async def dl_question(message: Message, state: FSMContext):

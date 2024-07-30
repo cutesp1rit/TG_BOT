@@ -8,9 +8,11 @@ class DownloadCheque(StatesGroup):
     person = State()
 
 class DownloadList(StatesGroup):
+    choose_option = State()
     name_of_list = State()
     question = State()
     get_products = State()
+    get_list = State()
 
 class GettingList(StatesGroup):
     get_name = State()

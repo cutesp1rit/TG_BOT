@@ -55,3 +55,8 @@ options_for_modification = ReplyKeyboardMarkup(keyboard=[[KeyboardButton(text="�
                                                          [KeyboardButton(text="Удалить некоторые элементы из списка")], [KeyboardButton(text="Добавить некоторые элементы в список")]],
                                                 resize_keyboard=True,
                                                 one_time_keyboard=True)
+
+options_elementwise_or_not = ReplyKeyboardMarkup(keyboard=[[KeyboardButton(text="Вводить продукты поэлементно")],
+                                                         [KeyboardButton(text="Ввести все одним списком-сообщением")]],
+                                                resize_keyboard=True,
+                                                one_time_keyboard=True)
