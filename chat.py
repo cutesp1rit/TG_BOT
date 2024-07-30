@@ -24,6 +24,9 @@ class Chat:
             return "Вы еще не составляли чеки, для этого используйте команду: /download_cheque"
         return self.last_cheque_
     
+    def get_dict_for_shop_lists_name(self):
+        return self.dict_for_shop_lists_.keys()
+    
     def check_cheque(self):
         return not(type(self.last_cheque_) is int)
     
@@ -33,3 +36,15 @@ class Chat:
         self.count_pos_ = 0
         self.count_user_ = 0
         self.list_users_products_ = list()
+
+    async def get_list(self, name):
+        return '\n'.join(self.dict_for_shop_lists_[name])
+    
+    async def get_len_list(self, name):
+        return len(self.dict_for_shop_lists_[name])
+    
+    async def delete_list(self, name):
+        del self.dict_for_shop_lists_[name]
+
+    async def clear_list(self, name):
+        self.dict_for_shop_lists_[name].clear()

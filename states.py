@@ -11,3 +11,11 @@ class DownloadList(StatesGroup):
     name_of_list = State()
     question = State()
     get_products = State()
+
+class GettingList(StatesGroup):
+    get_name = State()
+
+class ModifyLists(StatesGroup):
+    chosse_list = State()
+    choose_modification = State()
+    delete_products = State()
