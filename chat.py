@@ -38,7 +38,13 @@ class Chat:
         self.list_users_products_ = list()
 
     async def get_list(self, name):
-        return '\n'.join(self.dict_for_shop_lists_[name])
+        res = ""
+        for profuct in self.dict_for_shop_lists_[name]:
+            if profuct.get_mark():
+                res = res + ("<s>" + str(profuct) + "</s>" + '\n')
+            else:
+                res = (str(profuct) + '\n') + res
+        return res
     
     async def get_len_list(self, name):
         return len(self.dict_for_shop_lists_[name])

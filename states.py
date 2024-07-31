@@ -21,6 +21,9 @@ class ModifyLists(StatesGroup):
     choose_list = State()
     choose_modification = State()
     delete_products = State()
+    cross_out_product = State()
+    get_products = State()
+    get_list = State()
 
 class RemoveDebt(StatesGroup):
     choose_person = State()
