@@ -51,9 +51,9 @@ stop = ReplyKeyboardMarkup(keyboard=[[KeyboardButton(text="/stop")]],
                                                 resize_keyboard=True,
                                                 one_time_keyboard=True)
 
-options_for_modification = ReplyKeyboardMarkup(keyboard=[[KeyboardButton(text="Удалить список")], [KeyboardButton(text="Очистить список")],
-                                                         [KeyboardButton(text="Удалить некоторые элементы из списка")], [KeyboardButton(text="Добавить некоторые элементы в список")],
-                                                         [KeyboardButton(text="Зачеркнуть купленные продукты")]],
+options_for_modification = ReplyKeyboardMarkup(keyboard=[[KeyboardButton(text="🗑 Удалить список")], [KeyboardButton(text="🧹 Очистить список")],
+                                                         [KeyboardButton(text="🗑 Удалить некоторые элементы из списка")], [KeyboardButton(text="✔️ Добавить некоторые элементы в список")],
+                                                         [KeyboardButton(text="✏️ Зачеркнуть купленные продукты")]],
                                                 resize_keyboard=True,
                                                 one_time_keyboard=True)
 

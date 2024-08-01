@@ -26,17 +26,17 @@ class User:
         return self.list_without_user_
 
     def get_own_debts(self):
-        res = f"@{self.name_} должен:\n\n"
+        res = f"<b>@{self.name_} должен:</b>\n\n"
         for i in self.own_debts_.items():
             res += f"@{i[0]}: {i[1]}\n"
-        res += f"всего: {sum(self.own_debts_.values())}"
+        res += f"<u>всего</u>: {sum(self.own_debts_.values())}"
         return res
         
     def get_other_debts(self):
-        res = f"в долгу у @{self.name_}:\n\n"
+        res = f"<b>В долгу у @{self.name_}:</b>\n\n"
         for i in self.other_debts_.items():
             res += f"@{i[0]}: {i[1]}\n"
-        res += f"всего: {sum(self.other_debts_.values())}"
+        res += f"<u>всего</u>: {sum(self.other_debts_.values())}"
         return res
 
     def new_other_debts(self, person, money):
