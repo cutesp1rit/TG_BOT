@@ -1,4 +1,4 @@
-from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
+from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton
 
 
 def makeKeyboardForChoosingNum(id, dict_chats):
@@ -61,3 +61,7 @@ options_elementwise_or_not = ReplyKeyboardMarkup(keyboard=[[KeyboardButton(text=
                                                          [KeyboardButton(text="Ввести все одним списком-сообщением")]],
                                                 resize_keyboard=True,
                                                 one_time_keyboard=True)
+
+stop_inline = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="stop", callback_data="stop")]])
+
+current_date_inline = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="Использовать текущую дату в качестве названия", callback_data="data989")]])
