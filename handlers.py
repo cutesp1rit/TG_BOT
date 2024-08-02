@@ -1,5 +1,5 @@
 from aiogram import Router, F
-from aiogram.types import Message, FSInputFile, ForceReply, CallbackQuery
+from aiogram.types import Message, FSInputFile, CallbackQuery
 from aiogram.filters import CommandStart, Command
 from app.telethon_functions import get_chat_members
 from app.user import User
@@ -15,16 +15,9 @@ from app.product import Product
 import app.long_messages as lm
 
 
-# добавить смайлики и красоту в целом -- DONE
-# какие методы должны быть async - ?
-# отдельная папка для чеков - ?
-# возможно стоит добавить команду help -- DONE
 # прописать логи
-# выводить список, чтобы зачеркивать -- DONE
-# убрать стоп -- DONE
 # сделать reply_markup с ответом на сообщение - ?
-# возможно сделать ответ с помощью inline кнопок -- DONE
-# inline кнопку для даты -- DONE
+# переделать start, еще чего-то добавить в help -- DONE
 
 router = Router()
 dict_chats = dict()
@@ -72,7 +65,7 @@ async def cmd_download_cheque(callback: CallbackQuery, state: FSMContext):
     curr_chat : Chat = dict_chats[message.chat.id]
     curr_chat.new_cheque(Cheque(curr_chat.get_users(), callback.from_user.username))
     curr_chat.users_[callback.from_user.username].new_cheque(curr_chat.last_cheque_)
-    await message.reply("Напишите количество позиций, которое будет в чеке 🧾:")
+    await message.reply('Напишите количество позиций, которое будет в чеке 🧾 (не забудьте именно "ответить" на сообщение бота).')
     await state.set_state(DownloadCheque.count_of_positions)
 
 @router.callback_query(F.data == "get_my_debts")
@@ -112,7 +105,7 @@ async def cmd_new_list(callback: CallbackQuery, state: FSMContext):
     await callback.answer('Вы выбрали "Создать новый список".')
     message = callback.message
     await check_data(message)
-    await message.reply("Напишите название списка 📋:", reply_markup=kb.current_date_inline)
+    await message.reply('Напишите название списка 📋 (не забудьте именно "ответить" на сообщение бота)', reply_markup=kb.current_date_inline)
     await state.set_state(DownloadList.name_of_list)
 
 @router.callback_query(F.data == "remove_debt")
@@ -141,6 +134,9 @@ async def cmd_modify_lists(callback: CallbackQuery, state: FSMContext):
     await callback.answer('Вы выбрали "Произвести изменения с одним из списков".')
     message = callback.message
     await check_data(message)
+    if (len(dict_chats[message.chat.id].get_dict_for_shop_lists_name()) == 0):
+        await message.reply("Вы еще не создавали списки, для этого воспользуйтесь командой /new_list")
+        return
     await message.reply("Выберите какой из списков вы бы хотели изменить ✍🏻:", reply_markup=kb.makeKeyboardForGettingLists(dict_chats[message.chat.id]))
     await state.set_state(ModifyLists.choose_list)
 
@@ -195,7 +191,7 @@ async def ml_get_opt(message: Message, state: FSMContext):
             list = await curr_chat.get_list(data["name"])
             await message.answer(f"Вот список:")
             await message.answer(f'Список 📋 <b>"{data["name"]}"</b>:\n\n{list}', parse_mode=ParseMode.HTML)
-            await message.reply("Последовательно по сообщению вводите название каждого продукта, которое хотите удалить. Для остановки воспользуйтесь кнопкой.", reply_markup=kb.stop_inline)
+            await message.reply('Последовательно по сообщению вводите название каждого продукта, которое хотите удалить. Для остановки воспользуйтесь кнопкой. (не забудьте именно "ответить" на сообщение бота)', reply_markup=kb.stop_inline)
             await state.set_state(ModifyLists.delete_products)
         elif low_message == opt_mod[3]:
             await state.set_state(DownloadList.choose_option)
@@ -218,10 +214,10 @@ async def dl_ch_opt(message: Message, state: FSMContext):
             raise IncorrectData
         if (message.text.lower() == "вводить продукты поэлементно"):
             await state.set_state(ModifyLists.get_products)
-            await message.reply("Хорошо, последовательно по сообщению вводите название каждого продукта. Для остановки воспользуйтесь кнопкой.", reply_markup=kb.stop_inline)
+            await message.reply('Хорошо, последовательно по сообщению вводите название каждого продукта. Для остановки воспользуйтесь кнопкой. (не забудьте именно "ответить" на сообщение бота)', reply_markup=kb.stop_inline)
         else:
             await state.set_state(ModifyLists.get_list)
-            await message.reply("Хорошо, тогда одним сообщением отправьте ваш список, чтобы каждый продукт был на отдельной строке. Пример:")
+            await message.reply('Хорошо, тогда одним сообщением отправьте ваш список, чтобы каждый продукт был на отдельной строке. (не забудьте именно "ответить" на сообщение бота) Пример:')
             await message.answer('Помидоры\nОгурцы\nХлеб\n...')
     except IncorrectData:
         await message.reply("❗️ Пожалуйста, введите/выберите опцию из предложенных кнопками, других нет..")
@@ -272,7 +268,7 @@ async def ml_del_prod(message: Message, state: FSMContext):
                 break
         if flag:
             raise IncorrectData
-        await message.reply("Что еще?")
+        await message.reply('Что еще? (не забудьте именно "ответить" на сообщение бота)')
     except IncorrectData:
         await message.reply("❗️ Пожалуйста, введите/выберите элемент из списка, других нет..")
     except Exception as ex:
@@ -287,7 +283,7 @@ async def get_count_of_positions(message: Message, state: FSMContext):
         await state.update_data(count_of_positions=int(message.text))
         curr_chat.count_pos_ = int(message.text)
         await state.set_state(DownloadCheque.product)
-        await message.reply(f"Отлично! Теперь введите название продукта №{curr_chat.flag_main_ + 1}:")
+        await message.reply(f'Отлично! Теперь введите название продукта №{curr_chat.flag_main_ + 1}. (не забудьте именно "ответить" на сообщение бота)')
     except ValueError:
         await message.reply(f"❗️ Некорректные данные, пожалуйста, введите целое ненулевое число, без лишних символов.")
     except Exception as ex:
@@ -298,7 +294,7 @@ async def get_name_of_product(message: Message, state: FSMContext):
     curr_chat : Chat = dict_chats[message.chat.id]
     await state.update_data(product=message.text)
     await state.set_state(DownloadCheque.price)
-    await message.reply(f"Отлично! Теперь введите цену продукта №{curr_chat.flag_main_ + 1}:")
+    await message.reply(f'Отлично! Теперь введите цену продукта №{curr_chat.flag_main_ + 1}. (не забудьте именно "ответить" на сообщение бота)')
 
 @router.message(DownloadCheque.price)
 async def get_price(message: Message, state: FSMContext):
@@ -306,7 +302,7 @@ async def get_price(message: Message, state: FSMContext):
     try:
         await state.update_data(price=int(message.text))
         await state.set_state(DownloadCheque.num_people)
-        await message.reply(f"Выберите сколько человек будет скидываться на продукт №{curr_chat.flag_main_ + 1}:", reply_markup=kb.makeKeyboardForChoosingNum(message.chat.id, dict_chats))
+        await message.reply(f'Выберите сколько человек будет скидываться на продукт №{curr_chat.flag_main_ + 1}?', reply_markup=kb.makeKeyboardForChoosingNum(message.chat.id, dict_chats))
     except ValueError:
         await message.reply(f"❗️ Некорректные данные, пожалуйста, введите целое число, без лишних символов.")
     except Exception as ex:
@@ -355,10 +351,10 @@ async def get_names_of_people(message: Message, state: FSMContext):
                     await curr_chat.users_[user].calculate_own_debts(curr_chat.get_cheque())
                 return
             await state.set_state(DownloadCheque.product)
-            await message.reply(f"Отлично! Теперь введите название продукта №{curr_chat.flag_main_ + 1}:")
+            await message.reply(f'Отлично! Теперь введите название продукта №{curr_chat.flag_main_ + 1}. (не забудьте именно "ответить" на сообщение бота)')
             return
         await state.set_state(DownloadCheque.person)
-        await message.reply(f"Кто еще?", reply_markup=kb.makeKeyboardForChoosingPeople(message.chat.id, dict_chats))
+        await message.reply(f'Кто еще? (не забудьте именно "ответить" на сообщение бота)', reply_markup=kb.makeKeyboardForChoosingPeople(message.chat.id, dict_chats))
     except IncorrectData:
         await message.reply("❗️ Пожалуйста, введите/выберите ник без @ из пользователей этого чата..")
     except Exception as ex:
@@ -373,7 +369,7 @@ async def rd_choose_person(message: Message, state: FSMContext):
             raise IncorrectData
         await state.update_data(debtor=message.text)
         await state.set_state(RemoveDebt.get_num)
-        await message.reply("Отлично! Теперь введите размер какого долга 💰 (число) с него вы собираетесь снять:")
+        await message.reply('Отлично! Теперь введите размер какого долга 💰 (число) с него вы собираетесь снять. (не забудьте именно "ответить" на сообщение бота)')
     except IncorrectData:
         await message.reply("❗️ Пожалуйста, введите/выберите ник без @ из пользователей этого чата, а также не себя..", reply_markup=kb.makeKeyboardForChoosingPeopleWithoutUser(curr_chat.users_[data["user"]].get_list_without_user()))
     except Exception as ex:
@@ -432,10 +428,10 @@ async def dl_ch_opt(message: Message, state: FSMContext):
             raise IncorrectData
         if (message.text.lower() == "вводить продукты поэлементно"):
             await state.set_state(DownloadList.get_products)
-            await message.reply("Хорошо, последовательно по сообщению вводите название каждого продукта. Для остановки воспользуйтесь кнопкой.", reply_markup=kb.stop_inline)
+            await message.reply('Хорошо, последовательно по сообщению вводите название каждого продукта. Для остановки воспользуйтесь кнопкой. (не забудьте именно "ответить" на сообщение бота)', reply_markup=kb.stop_inline)
         else:
             await state.set_state(DownloadList.get_list)
-            await message.reply("Хорошо, тогда одним сообщением отправьте ваш список, чтобы каждый продукт был на отдельной строке. Пример:")
+            await message.reply('Хорошо, тогда одним сообщением отправьте ваш список, чтобы каждый продукт был на отдельной строке. (не забудьте именно "ответить" на сообщение бота) Пример:')
             await message.answer('Помидоры\nОгурцы\nХлеб\n...')
     except IncorrectData:
         await message.reply("❗️ Пожалуйста, введите/выберите опцию из предложенных кнопками, других нет..")
