@@ -15,10 +15,10 @@ from app.product import Product
 import app.long_messages as lm
 
 
-# добавить смайлики и красоту в целом
+# добавить смайлики и красоту в целом -- DONE
 # какие методы должны быть async - ?
 # отдельная папка для чеков - ?
-# возможно стоит добавить команду help
+# возможно стоит добавить команду help -- DONE
 # прописать логи
 # выводить список, чтобы зачеркивать -- DONE
 # убрать стоп -- DONE
@@ -50,36 +50,53 @@ async def cmd_start(message: Message):
         await message.answer(lm.start_message_for_chat, parse_mode=ParseMode.HTML)
 
 @router.message(Command('help'))
-async def cmd_download_cheque(message: Message, state: FSMContext):
+async def cmd_help(message: Message, state: FSMContext):
     await check_data(message)
     await message.answer(lm.help_message, parse_mode=ParseMode.HTML)
 
-@router.message(Command('download_cheque'))
-async def cmd_download_cheque(message: Message, state: FSMContext):
+@router.message(Command('cheque'))
+async def cmd_cheque(message: Message, state: FSMContext):
+    await check_data(message)
+    await message.reply("Выберите дальнейшие действия подраздела cheque", reply_markup=kb.cheque_inline)
+
+@router.message(Command('list'))
+async def cmd_list(message: Message, state: FSMContext):
+    await check_data(message)
+    await message.reply("Выберите дальнейшие действия подраздела list", reply_markup=kb.list_inline)
+
+@router.callback_query(F.data == "download_cheque")
+async def cmd_download_cheque(callback: CallbackQuery, state: FSMContext):
+    await callback.answer('Вы выбрали "Загрузить чек".')
+    message = callback.message
     await check_data(message)
     curr_chat : Chat = dict_chats[message.chat.id]
-    curr_chat.new_cheque(Cheque(curr_chat.get_users(), message.from_user.username))
-    curr_chat.users_[message.from_user.username].new_cheque(curr_chat.last_cheque_)
+    curr_chat.new_cheque(Cheque(curr_chat.get_users(), callback.from_user.username))
+    curr_chat.users_[callback.from_user.username].new_cheque(curr_chat.last_cheque_)
     await message.reply("Напишите количество позиций, которое будет в чеке 🧾:")
     await state.set_state(DownloadCheque.count_of_positions)
 
-@router.message(Command('get_my_debts'))
-async def cmd_get_my_debts(message: Message):
+@router.callback_query(F.data == "get_my_debts")
+async def cmd_get_my_debts(callback: CallbackQuery, state: FSMContext):
+    await callback.answer('Вы выбрали "Получить информацию о собственных долгах".')
+    message = callback.message
     await check_data(message)
     curr_chat : Chat = dict_chats[message.chat.id]
-    curr_user : User = curr_chat.users_[message.from_user.username]
+    curr_user : User = curr_chat.users_[callback.from_user.username]
     await message.reply(curr_user.get_own_debts(), parse_mode=ParseMode.HTML)
     
-
-@router.message(Command('get_other_debts'))
-async def cmd_get_other_debts(message: Message):
+@router.callback_query(F.data == "get_other_debts")
+async def cmd_get_other_debts(callback: CallbackQuery, state: FSMContext):
+    await callback.answer('Вы выбрали "Получить информацию о долгах мне".')
+    message = callback.message
     await check_data(message)
     curr_chat : Chat = dict_chats[message.chat.id]
-    curr_user : User = curr_chat.users_[message.from_user.username]
+    curr_user : User = curr_chat.users_[callback.from_user.username]
     await message.reply(curr_user.get_other_debts(), parse_mode=ParseMode.HTML)
 
-@router.message(Command('get_last_cheque'))
-async def cmd_get_last_cheque(message: Message):
+@router.callback_query(F.data == "get_last_cheque")
+async def cmd_get_last_cheque(callback: CallbackQuery, state: FSMContext):
+    await callback.answer('Вы выбрали "Посмотреть последний чек".')
+    message = callback.message
     await check_data(message)
     curr_chat : Chat = dict_chats[message.chat.id]
     if (curr_chat.check_cheque()):
@@ -90,22 +107,28 @@ async def cmd_get_last_cheque(message: Message):
     else:
         await message.reply("❗️ Вы еще не составляли чеки, для этого используйте команду: /download_cheque")
 
-@router.message(Command('new_list'))
-async def cmd_new_list(message: Message, state: FSMContext):
+@router.callback_query(F.data == "new_list")
+async def cmd_new_list(callback: CallbackQuery, state: FSMContext):
+    await callback.answer('Вы выбрали "Создать новый список".')
+    message = callback.message
     await check_data(message)
     await message.reply("Напишите название списка 📋:", reply_markup=kb.current_date_inline)
     await state.set_state(DownloadList.name_of_list)
 
-@router.message(Command('remove_debt'))
-async def cmd_remove_debt(message: Message, state: FSMContext):
+@router.callback_query(F.data == "remove_debt")
+async def cmd_remove_debt(callback: CallbackQuery, state: FSMContext):
+    await callback.answer('Вы выбрали "Снять долг с кого-то".')
+    message = callback.message
     await check_data(message)
     curr_chat : Chat = dict_chats[message.chat.id]
-    await state.update_data(user=message.from_user.username)
-    await message.reply("Выберите с какого пользователя вы бы хотели снять долг 💰", reply_markup=kb.makeKeyboardForChoosingPeopleWithoutUser(curr_chat.users_[message.from_user.username].get_list_without_user()))
+    await state.update_data(user=callback.from_user.username)
+    await message.reply("Выберите с какого пользователя вы бы хотели снять долг 💰", reply_markup=kb.makeKeyboardForChoosingPeopleWithoutUser(curr_chat.users_[callback.from_user.username].get_list_without_user()))
     await state.set_state(RemoveDebt.choose_person)
 
-@router.message(Command('get_lists'))
-async def cmd_get_lists(message: Message, state: FSMContext):
+@router.callback_query(F.data == "get_lists")
+async def cmd_get_lists(callback: CallbackQuery, state: FSMContext):
+    await callback.answer('Вы выбрали "Посмотреть содержимое одного из списков".')
+    message = callback.message
     await check_data(message)
     if (len(dict_chats[message.chat.id].get_dict_for_shop_lists_name()) == 0):
         await message.reply("Вы еще не создавали списки, для этого воспользуйтесь командой /new_list")
@@ -113,8 +136,10 @@ async def cmd_get_lists(message: Message, state: FSMContext):
     await message.reply("Выберите какой из списков вы бы хотели посмотреть 👀:", reply_markup=kb.makeKeyboardForGettingLists(dict_chats[message.chat.id]))
     await state.set_state(GettingList.get_name)
 
-@router.message(Command('modify_lists'))
-async def cmd_modify_lists(message: Message, state: FSMContext):
+@router.callback_query(F.data == "modify_lists")
+async def cmd_modify_lists(callback: CallbackQuery, state: FSMContext):
+    await callback.answer('Вы выбрали "Произвести изменения с одним из списков".')
+    message = callback.message
     await check_data(message)
     await message.reply("Выберите какой из списков вы бы хотели изменить ✍🏻:", reply_markup=kb.makeKeyboardForGettingLists(dict_chats[message.chat.id]))
     await state.set_state(ModifyLists.choose_list)
@@ -239,9 +264,14 @@ async def ml_del_prod(message: Message, state: FSMContext):
     curr_chat : Chat = dict_chats[message.chat.id]
     data = await state.get_data()
     try:
-        if not(message.text.lower() in curr_chat.dict_for_shop_lists_[data["name"]]):
+        flag = True
+        for product in curr_chat.dict_for_shop_lists_[data["name"]]:
+            if (product.get_name() == message.text.lower()):
+                curr_chat.dict_for_shop_lists_[data["name"]].remove(product)
+                flag = False
+                break
+        if flag:
             raise IncorrectData
-        curr_chat.dict_for_shop_lists_[data["name"]].remove(message.text.lower())
         await message.reply("Что еще?")
     except IncorrectData:
         await message.reply("❗️ Пожалуйста, введите/выберите элемент из списка, других нет..")
@@ -453,7 +483,6 @@ async def dl_question(message: Message, state: FSMContext):
     curr_chat.dict_for_shop_lists_[data["name"]].append(Product(message.text.lower()))
     await message.reply("Что еще?")
     
-
 @router.message()
 async def universal(message: Message):
     await check_data(message)

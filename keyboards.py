@@ -65,3 +65,13 @@ options_elementwise_or_not = ReplyKeyboardMarkup(keyboard=[[KeyboardButton(text=
 stop_inline = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="stop", callback_data="stop")]])
 
 current_date_inline = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="Использовать текущую дату в качестве названия", callback_data="data989")]])
+
+cheque_inline = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="Загрузить чек", callback_data="download_cheque")],
+                                                      [InlineKeyboardButton(text="Посмотреть последний чек", callback_data="get_last_cheque")],
+                                                      [InlineKeyboardButton(text="Получить информацию о долгах мне", callback_data="get_other_debts")],
+                                                      [InlineKeyboardButton(text="Получить информацию о собственных долгах", callback_data="get_my_debts")],
+                                                      [InlineKeyboardButton(text="Снять долг с кого-то", callback_data="remove_debt")]])
+
+list_inline = InlineKeyboardMarkup(inline_keyboard=[[InlineKeyboardButton(text="Создать новый список", callback_data="new_list")],
+                                                      [InlineKeyboardButton(text="Посмотреть содержимое одного из списков", callback_data="get_lists")],
+                                                      [InlineKeyboardButton(text="Произвести изменения с одним из списков", callback_data="modify_lists")]])
